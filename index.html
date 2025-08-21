@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海报展示画廊</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            padding: 40px 20px;
+            position: relative;
+        }
+        
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #ffdddd;
+            padding: 10px;
+            border: 1px solid #ff0000;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        /* 左侧花朵容器 */
+        .left-flowers {
+            position: relative;
+            width: 20%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 0;
+        }
+        
+        /* 右侧花朵容器 */
+        .right-flowers {
+            width: 20%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 0;
+        }
+        
+        /* 海报轮播容器 */
+        .poster-carousel {
+            width: 60%;
+            position: relative;
+            overflow: hidden;
+            padding: 0 30px;
+        }
+        
+        .carousel-container {
+            position: relative;
+            height: 700px;
+        }
+        
+        .carousel-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .carousel-slide.active {
+            opacity: 1;
+            z-index: 10;
+        }
+        
+        .carousel-slide.prev {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+        
+        .carousel-slide.next {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        
+        .poster {
+            width: 100%;
+            height: auto;
+            max-height: 600px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .poster:hover {
+            transform: scale(1.02);
+        }
+        
+        /* 花朵样式 */
+        .flower {
+            transition: transform 0.3s ease;
+            border: 2px dashed #ccc;
+            padding: 5px;
+        }
+        
+        .flower-left-top {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 100px;
+        }
+        
+        .flower-left-bottom {
+            width: 100px;
+            height: 100px;
+            cursor: move;
+        }
+        
+        .flower-right {
+            width: 130px;
+            height: 130px;
+            cursor: pointer;
+        }
+        
+        /* 导航按钮 */
+        .carousel-nav {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            z-index: 20;
+        }
+        
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ccc;
+            margin: 0 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        
+        .nav-dot.active {
+            background-color: #6a11cb;
+            transform: scale(1.2);
+        }
+        
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            z-index: 101;
+        }
+        
+        /* 控制按钮 */
+        .controls {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 15;
+            transform: translateY(-50%);
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.8);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .left-flowers, .right-flowers {
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 20px 0;
+            }
+            
+            .poster-carousel {
+                width: 100%;
+                order: -1;
+            }
+            
+            .carousel-container {
+                height: 500px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .carousel-container {
+                height: 400px;
+            }
+            
+            .flower-left-top, .flower-left-bottom, .flower-right {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info" id="debugInfo">正在检测图片...</div>
+    
+    <div class="container">
+        <!-- 左侧花朵 -->
+        <div class="left-flowers">
+            <img src="flower1.jpeg" alt="左侧上方花朵" class="flower flower-left-top" id="rotatingFlower" onerror="imageError(this, 'flower1.jpeg')">
+            <img src="flower2.jpeg" alt="左侧下方花朵" class="flower flower-left-bottom" id="draggableFlower" onerror="imageError(this, 'flower2.jpeg')">
+        </div>
+        
+        <!-- 海报轮播区 -->
+        <div class="poster-carousel">
+            <div class="carousel-container">
+                <div class="carousel-slide active">
+                    <img src="main1.jpeg" alt="海报1" class="poster" onerror="imageError(this, 'main1.jpeg')">
+                </div>
+                <div class="carousel-slide">
+                    <img src="main2.jpeg" alt="海报2" class="poster" onerror="imageError(this, 'main2.jpeg')">
+                </div>
+                <div class="carousel-slide">
+                    <img src="main3.jpeg" alt="海报3" class="poster" onerror="imageError(this, 'main3.jpeg')">
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-btn prev-btn">&#10094;</div>
+                <div class="control-btn next-btn">&#10095;</div>
+            </div>
+            
+            <div class="carousel-nav">
+                <div class="nav-dot active" data-index="0"></div>
+                <div class="nav-dot" data-index="1"></div>
+                <div class="nav-dot" data-index="2"></div>
+            </div>
+        </div>
+        
+        <!-- 右侧花朵 -->
+        <div class="right-flowers">
+            <img src="flower3.jpeg" alt="右侧花朵" class="flower flower-right" id="scalingFlower" onerror="imageError(this, 'flower3.jpeg')">
+        </div>
+    </div>
+    
+    <!-- 模态框 -->
+    <div class="modal" id="imageModal">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        // 图片错误检测
+        function imageError(img, filename) {
+            console.error('图片加载失败: ' + filename);
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.innerHTML = '错误: ' + filename + ' 加载失败<br>请检查文件名和路径';
+            debugInfo.style.background = '#ffdddd';
+            
+            // 显示错误提示在图片位置上
+            img.alt = '图片加载失败: ' + filename;
+            img.style.border = '2px dashed red';
+            img.style.backgroundColor = '#ffeeee';
+            
+            // 创建文本显示
+            const errorText = document.createElement('div');
+            errorText.innerHTML = '加载失败: ' + filename;
+            errorText.style.color = 'red';
+            errorText.style.fontSize = '12px';
+            errorText.style.textAlign = 'center';
+            errorText.style.marginTop = '5px';
+            
+            img.parentNode.appendChild(errorText);
+        }
+        
+        // 检查所有图片是否加载成功
+        function checkImages() {
+            const images = document.querySelectorAll('img');
+            let allLoaded = true;
+            let loadedCount = 0;
+            
+            images.forEach(img => {
+                if (!img.complete || img.naturalHeight === 0) {
+                    allLoaded = false;
+                    console.log('图片未加载:', img.src);
+                } else {
+                    loadedCount++;
+                }
+            });
+            
+            const debugInfo = document.getElementById('debugInfo');
+            if (allLoaded) {
+                debugInfo.innerHTML = '所有图片加载成功!';
+                debugInfo.style.background = '#ddffdd';
+            } else {
+                debugInfo.innerHTML = `已加载 ${loadedCount}/${images.length} 个图片<br>请检查文件名`;
+            }
+        }
+        
+        // 页面加载完成后检查
+        window.addEventListener('load', checkImages);
+        
+        // 原有的功能代码
+        document.addEventListener('DOMContentLoaded', function() {
+            // 元素获取
+            const rotatingFlower = document.getElementById('rotatingFlower');
+            const draggableFlower = document.getElementById('draggableFlower');
+            const scalingFlower = document.getElementById('scalingFlower');
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.nav-dot');
+            const prevBtn = document.querySelector('.prev-btn');
+            const nextBtn = document.querySelector('.next-btn');
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const closeModal = document.querySelector('.close-modal');
+            const posters = document.querySelectorAll('.poster');
+            
+            let currentSlide = 0;
+            let autoPlayInterval;
+            
+            // 初始化函数
+            function init() {
+                // 启动自动轮播
+                startAutoPlay();
+                
+                // 设置左侧上方花朵的鼠标跟随旋转
+                document.addEventListener('mousemove', rotateFlower);
+                
+                // 设置左侧下方花朵的拖动功能
+                initDraggableFlower();
+                
+                // 设置右侧花朵的缩放功能
+                initScalingFlower();
+                
+                // 设置海报点击放大
+                initPosterModal();
+            }
+            
+            // 左侧上方花朵旋转功能
+            function rotateFlower(e) {
+                const x = e.clientX;
+                const y = e.clientY;
+                
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                
+                const angleX = (y - centerY) / 20;
+                const angleY = (centerX - x) / 20;
+                
+                rotatingFlower.style.transform = `perspective(1000px) rotateX(${angleX}deg) rotateY(${angleY}deg)`;
+            }
+            
+            // 左侧下方花朵拖动功能
+            function initDraggableFlower() {
+                let isDragging = false;
+                let startX, startY, initialX, initialY;
+                
+                draggableFlower.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    initialX = this.offsetLeft;
+                    initialY = this.offsetTop;
+                    this.style.cursor = 'grabbing';
+                    this.style.zIndex = '100';
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', function(e) {
+                    if (!isDragging) return;
+                    
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    draggableFlower.style.left = `${initialX + dx}px`;
+                    draggableFlower.style.top = `${initialY + dy}px`;
+                });
+                
+                document.addEventListener('mouseup', function() {
+                    isDragging = false;
+                    draggableFlower.style.cursor = 'grab';
+                });
+            }
+            
+            // 右侧花朵缩放功能
+            function initScalingFlower() {
+                let scale = 1;
+                
+                scalingFlower.addEventListener('click', function() {
+                    scale = scale === 1 ? 1.5 : 1;
+                    this.style.transform = `scale(${scale})`;
+                });
+            }
+            
+            // 海报轮播功能
+            function showSlide(index) {
+                // 移除所有活动类
+                slides.forEach(slide => {
+                    slide.classList.remove('active', 'prev', 'next');
+                });
+                dots.forEach(dot => dot.classList.remove('active'));
+                
+                // 计算前后索引
+                const prevIndex = (index - 1 + slides.length) % slides.length;
+                const nextIndex = (index + 1) % slides.length;
+                
+                // 设置活动类
+                slides[index].classList.add('active');
+                slides[prevIndex].classList.add('prev');
+                slides[nextIndex].classList.add('next');
+                
+                dots[index].classList.add('active');
+                
+                currentSlide = index;
+            }
+            
+            function nextSlide() {
+                showSlide((currentSlide + 1) % slides.length);
+            }
+            
+            function prevSlide() {
+                showSlide((currentSlide - 1 + slides.length) % slides.length);
+            }
+            
+            function startAutoPlay() {
+                autoPlayInterval = setInterval(nextSlide, 4000);
+            }
+            
+            function stopAutoPlay() {
+                clearInterval(autoPlayInterval);
+            }
+            
+            // 海报点击放大功能
+            function initPosterModal() {
+                posters.forEach(poster => {
+                    poster.addEventListener('click', function() {
+                        modal.style.display = 'flex';
+                        modalImage.src = this.src;
+                    });
+                });
+                
+                closeModal.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+                
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+            
+            // 事件监听器
+            prevBtn.addEventListener('click', function() {
+                stopAutoPlay();
+                prevSlide();
+                startAutoPlay();
+            });
+            
+            nextBtn.addEventListener('click', function() {
+                stopAutoPlay();
+                nextSlide();
+                startAutoPlay();
+            });
+            
+            dots.forEach(dot => {
+                dot.addEventListener('click', function() {
+                    stopAutoPlay();
+                    const index = parseInt(this.getAttribute('data-index'));
+                    showSlide(index);
+                    startAutoPlay();
+                });
+            });
+            
+            // 鼠标悬停时暂停自动播放
+            const carousel = document.querySelector('.poster-carousel');
+            carousel.addEventListener('mouseenter', stopAutoPlay);
+            carousel.addEventListener('mouseleave', startAutoPlay);
+            
+            // 初始化
+            init();
+        });
+    </script>
+</body>
+</html>
